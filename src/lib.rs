@@ -1,5 +1,6 @@
 // 2017 tinaun
 //! a simple canvas-like drawing api for putting pixels on a screen
+//! 
 //! ```rust
 //! extern crate wcanvas;
 //! use wcanvas::Canvas;  
@@ -19,16 +20,18 @@ extern crate gfx_device_gl;
 
 extern crate glutin;
 
+pub mod context;
 pub mod color;
 pub mod events;
 mod pipeline;
 
-use color::CanvasColor;
+use std::thread;
+use std::sync::mpsc;
+use std::ops::{Deref, DerefMut};
 
 pub struct Canvas {
-    fill_color: color::Rgba,
-    ev_loop: glutin::EventsLoop,
-    window: pipeline::Window<gfx_device_gl::Device>,
+    ev_loop_handle: mpsc::Receiver<glutin::Event>,
+    ctx: context::Context,
     listeners: events::ActiveListeners,
 }
 
@@ -37,41 +40,42 @@ impl Canvas {
     /// create a new Canvas
     pub fn new() -> Self {
         let ev_loop = glutin::EventsLoop::new();
-        let window = pipeline::init(800, 600, &ev_loop);
+        let ctx = context::Context::new(800, 600, &ev_loop);
+
+        let (tx, ev_loop_handle) = mpsc::channel();
+
+        thread::spawn(move ||{
+            use glutin::ControlFlow;
+            let mut ev_loop = ev_loop;
+
+            ev_loop.run_forever(|e|{
+                match e {
+                    //Closed => ControlFlow::Break,
+                    _ => {
+                        match tx.send(e) {
+                            Ok(_) => ControlFlow::Continue,
+                            Err(_) => ControlFlow::Break,
+                        }
+                    }
+                }
+            });
+        });
 
         Canvas {
-            fill_color: Default::default(),
-            ev_loop,
-            window,
+            ev_loop_handle,
+            ctx,
             listeners: events::ActiveListeners::new(),
         }
     }
 
-    /// set fill color
-    pub fn fill_color<C>(&mut self, color: C) 
-        where C: CanvasColor
-    {
-        self.fill_color = (color.as_rgb(), color.alpha()).into();
-    }
-
-    /// fill rectangle
-    pub fn fill_rect(&mut self, x: u32, y: u32, width: u32, height: u32) {
-
-        let data: Vec<_> = (0..width*height).map(|_| {
-            self.fill_color.into_gpu(None)
-        }).collect();
-
-        self.window.update_canvas(x, y, width, height, &data);
-    }
 
     /// register a function to be used as an event handler
     /// 
     /// note: as of right now, registering the same event twice will overwrite the previous handler
     /// function
-    pub fn on<F, E: events::Listener>(&mut self, handler: F) 
-        where F: FnMut(E::Event) + 'static
+    pub fn on<E: events::Listener>(&mut self, handler: events::Callback<E>) 
     {
-        self.listeners.add::<E>(Box::new(handler));
+        self.listeners.add::<E>(handler);
     }
 
     pub fn off<E: events::Listener>(&mut self) {
@@ -81,10 +85,9 @@ impl Canvas {
     /// hold execution until user hits `Esc`
     pub fn pause(&mut self) {
         let mut running = true;
-        let window = &mut self.window;
 
         while running {
-            self.ev_loop.poll_events(|e| {
+            while let Ok(e) = self.ev_loop_handle.try_recv() {
                 use glutin::Event::WindowEvent;
                 use glutin::VirtualKeyCode;
                 use glutin::WindowEvent::*;
@@ -101,21 +104,59 @@ impl Canvas {
                         KeyboardInput { device_id: _, input } if is_break(input) 
                             => running = false,
                         Resized(width, height) => {
-                            window.update_views(gfx_window_glutin::update_views);
+                            self.ctx.window.update_views(gfx_window_glutin::update_views);
                             //println!("resized: ({}, {})", width, height);
-                            window.resize(width, height);
+                            self.ctx.window.resize(width, height);
+
+                            if let Some(cb) = self.listeners.resize.as_mut() {
+                                cb(&mut self.ctx, (width, height));
+                            }
+                        },
+                        MouseMoved { device_id: _, position } => {
+                            if let Some(cb) = self.listeners.mouse_move.as_mut() {
+                                cb(&mut self.ctx, position);
+                            }
+                        },
+                        MouseInput { device_id: _, state, button } => {
+                            if let Some(cb) = self.listeners.mouse_click.as_mut() {
+                                cb(&mut self.ctx, (state, button));
+                            }
+                        },
+                        MouseWheel { device_id: _, delta, phase: _ } => {
+                            if let Some(cb) = self.listeners.mouse_scroll.as_mut() {
+                                if let glutin::MouseScrollDelta::LineDelta(_, y) = delta {
+                                    cb(&mut self.ctx, events::ScrollEvent::new(y));
+                                }
+                            }
+                        },
+                        KeyboardInput { device_id: _, input } => {
+                            if let Some(cb) = self.listeners.key_press.as_mut() {
+                                cb(&mut self.ctx, input);
+                            }
                         },
                         _ => (),
                     }
                 }
-            });
+            }
 
-            window.draw();
+            self.ctx.window.draw();
             ::std::thread::sleep(::std::time::Duration::from_millis(10));
         }
     }
 }
 
+impl Deref for Canvas {
+    type Target = context::Context;
+    fn deref(&self) -> &Self::Target {
+        &self.ctx
+    }
+}
+
+impl DerefMut for Canvas {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.ctx
+    }
+}
 
 
 

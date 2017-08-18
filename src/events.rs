@@ -1,20 +1,26 @@
 //! event listeners
 use glutin;
-use std::any::Any;
+
+pub use glutin::{ElementState, MouseButton, KeyboardInput};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum EventType {
     MouseMove,
     MouseClick,
+    MouseScroll,
     KeyPress,
     Resize,
 }
 
+
+pub type Callback<L> = Box<FnMut(&mut ::context::Context, <L as Listener>::Event)>;
+
 pub(crate) struct ActiveListeners {
-    pub mouse_move: Option<Box<FnMut(<MouseMove as Listener>::Event)>>,
-    pub mouse_click: Option<Box<FnMut(<MouseClick as Listener>::Event)>>,
-    pub key_press: Option<Box<FnMut(<KeyPress as Listener>::Event)>>,
-    pub resize: Option<Box<FnMut(<Resize as Listener>::Event)>>,
+    pub mouse_move: Option<Callback<MouseMove>>,
+    pub mouse_click: Option<Callback<MouseClick>>,
+    pub mouse_scroll: Option<Callback<MouseScroll>>,
+    pub key_press: Option<Callback<KeyPress>>,
+    pub resize: Option<Callback<Resize>>,
 }
 
 impl ActiveListeners {
@@ -22,36 +28,44 @@ impl ActiveListeners {
         ActiveListeners {
             mouse_move: None,
             mouse_click: None,
+            mouse_scroll: None,
             key_press: None,
             resize: None,
         }
     }
-    pub fn add<E: Listener>(&mut self, f: Box<FnMut(E::Event)>) {
+    pub fn add<E: Listener>(&mut self, f: Callback<E>) {
         match E::event_id() {
             EventType::MouseMove => {
                 let f = unsafe { // evil unsafe downcasts evil
-                    ::std::mem::transmute::<_, Box<FnMut(<MouseMove as Listener>::Event)>>(f)
+                    ::std::mem::transmute::<_, Callback<MouseMove>>(f)
                 };
 
                 self.mouse_move = Some(f);
             },
             EventType::MouseClick => {
                 let f = unsafe { // evil unsafe downcasts evil
-                    ::std::mem::transmute::<_, Box<FnMut(<MouseClick as Listener>::Event)>>(f)
+                    ::std::mem::transmute::<_, Callback<MouseClick>>(f)
                 };
 
                 self.mouse_click = Some(f);
             },
+            EventType::MouseScroll => {
+                let f = unsafe { // evil unsafe downcasts evil
+                    ::std::mem::transmute::<_, Callback<MouseScroll>>(f)
+                };
+
+                self.mouse_scroll = Some(f);
+            },
             EventType::KeyPress => {
                 let f = unsafe { // evil unsafe downcasts evil
-                    ::std::mem::transmute::<_, Box<FnMut(<KeyPress as Listener>::Event)>>(f)
+                    ::std::mem::transmute::<_, Callback<KeyPress>>(f)
                 };
 
                 self.key_press = Some(f);
             },
             EventType::Resize => {
                 let f = unsafe { // evil unsafe downcasts evil
-                    ::std::mem::transmute::<_, Box<FnMut(<Resize as Listener>::Event)>>(f)
+                    ::std::mem::transmute::<_, Callback<Resize>>(f)
                 };
 
                 self.resize = Some(f);
@@ -74,6 +88,9 @@ impl ActiveListeners {
             },
             EventType::Resize => {
                 self.resize = None;
+            },
+            EventType::MouseScroll => {
+                self.mouse_scroll = None;
             }
         }
     }
@@ -106,6 +123,34 @@ impl Listener for MouseClick {
     
     fn event_id() -> EventType {
         EventType::MouseClick
+    }
+}
+
+/// mouse scroll
+/// emits 
+pub enum MouseScroll {}
+
+impl Listener for MouseScroll {
+    type Event = ScrollEvent;
+    
+    fn event_id() -> EventType {
+        EventType::MouseScroll
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum ScrollEvent {
+    Up(f32),
+    Down(f32),
+}
+
+impl ScrollEvent {
+    pub(crate) fn new(amount: f32) -> Self {
+        if amount > 0.0 {
+            ScrollEvent::Up(amount)
+        } else {
+            ScrollEvent::Down(-amount)
+        }
     }
 }
 
