@@ -1,0 +1,10 @@
+[package]
+name = "wcanvas"
+version = "0.1.0"
+authors = ["tinaun <tinagma@gmail.com>"]
+
+[dependencies]
+gfx = "0.16"
+gfx_window_glutin = "0.17"
+gfx_device_gl = "0.14"
+glutin = "0.9"
