@@ -1,20 +1,46 @@
+//! 8 bit rgb and rgba color
+//!
+//! all operations on a `Canvas` use 8 bit color, with optional alpha channel
+
 use std::mem;
 use std::ops::Add;
 
+pub const BLACK: Rgb = Rgb(0.0, 0.0, 0.0);
+pub const WHITE: Rgb = Rgb(1.0, 1.0, 1.0);
+pub const DARK_GREY: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const LIGHT_GREY: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const RED: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const PINK: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const PURPLE: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const BLUE: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const LIGHT_BLUE: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const CYAN: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const GREEN: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const LIGHT_GREEN: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const YELLOW: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const ORANGE: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const BROWN: Rgb = Rgb(1.0, 0.0, 0.0);
+pub const LIGHT_BROWN: Rgb = Rgb(1.0, 0.0, 0.0);
+
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-/// internal representation of a color value
+/// internal representation of a solid color value
 ///
 pub struct Rgb(f32, f32, f32);
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+/// color value with alpha
 pub struct Rgba(Rgb, f32);
 
 impl Rgb {
+    /// compute alpha
     pub fn blend_alpha(self, a: f32) -> Self {
         Rgb(self.0 * a, self.1 * a, self.2 * a)
     }
 
-    // mix two colors together with a certain weight
+    /// mix two colors together with a certain weight
+    ///
+    /// this is a linear mix. `0xFF0000` mixed with `0x00FF00` at a weight of
+    /// `0.5` is `0x808000`.
     pub fn mix(self, other: Self, weight: f32) -> Self {
         let a = self.blend_alpha(weight);
         let b = other.blend_alpha(1.0 - weight);
@@ -59,6 +85,7 @@ impl From<(Rgb, f32)> for Rgba {
 /// any value that could be used as a color
 /// 
 /// including:
+///
 ///  * `(r, g, b)` triples and `(r, g, b, a)` 4-tuples for all floats and
 /// (unsigned) int types
 ///  * `[r, g, b]`, and `[r, g, b, a]` arrays for floats and unsigned ints
