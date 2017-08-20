@@ -7,7 +7,7 @@ pub struct Context {
     width: u32,
     height: u32,
     fill_color: color::Rgba,
-    pub(crate) window: ::pipeline::Window<::gfx_device_gl::Device>,
+    pub(crate) window: ::pipeline::GlWindow,
 }
 
 impl Context {
@@ -95,7 +95,8 @@ impl Context {
 
     /// set a pixel to a specific color
     ///
-    /// this does not change the internal color values of the context.
+    /// this is a low level texture operation and is not effected
+    /// by preset colors or alpha blending
     pub fn set_pixel<C: CanvasColor>(&mut self, x: u32, y: u32, c: C) {
         if x >= self.width || y >= self.height {
             return;

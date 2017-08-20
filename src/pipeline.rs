@@ -62,7 +62,7 @@ fn create_texture<F, R>(factory: &mut F, width: u32, height: u32) -> TexWithView
         kind,
         levels: 1 as texture::Level,
         format: surface,
-        bind: gfx::SHADER_RESOURCE,
+        bind: gfx::SHADER_RESOURCE | gfx::RENDER_TARGET,
         usage: gfx::memory::Usage::Dynamic,
     };
     let raw = factory.create_texture_raw(desc, Some(channel), Some(&[&data]))
@@ -94,10 +94,11 @@ gfx_defines! {
     }
 }
 
-
-pub struct Window<D: Device> {
+pub type GlWindow = Window<::gfx_device_gl::Device, ::gfx_device_gl::Factory>;
+pub struct Window<D: Device, F: Factory<D::Resources>> {
     window: glutin::GlWindow,
     device: D,
+    factory: F,
     backing: Backing,
     _texture: Texture<D::Resources>,
     encoder: gfx::Encoder<D::Resources, D::CommandBuffer>,
@@ -107,7 +108,7 @@ pub struct Window<D: Device> {
 }
 
 pub fn init(width: u32, height: u32, ev_loop: &glutin::EventsLoop) 
-    -> Window<::gfx_device_gl::Device> 
+    -> GlWindow
 {
     
     let builder = glutin::WindowBuilder::new()
@@ -153,6 +154,7 @@ pub fn init(width: u32, height: u32, ev_loop: &glutin::EventsLoop)
     Window {
         window,
         device,
+        factory,
         backing: tex_backing,
         _texture: tex_handle,
         encoder,
@@ -162,7 +164,7 @@ pub fn init(width: u32, height: u32, ev_loop: &glutin::EventsLoop)
     }
 }
 
-impl<D: gfx::Device> Window<D> {
+impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
     pub fn draw(&mut self) {
         self.encoder.clear(&self.data.out, [0.0, 0.0, 0.0, 1.0]);
         self.encoder.draw(&self.slice, &self.pipeline, &self.data);
@@ -175,7 +177,11 @@ impl<D: gfx::Device> Window<D> {
 
     pub fn resize(&mut self, new_width: u32, new_height: u32) {
         if new_width > self.backing.width || new_height > self.backing.height {
-
+            let (tb, th, tv) = create_texture(&mut self.factory, new_width, new_height);
+            self.data.canvas.0 = tv;
+            self._texture = th;
+            self.backing = tb;
+            println!("created larger texture!");
         }
         
         
@@ -205,8 +211,8 @@ impl<D: gfx::Device> Window<D> {
         >(&self._texture, None, bounds, data).expect("painting error");
     }
 
-    pub fn update_views<F>(&mut self, f: F) 
-        where F: Fn( &glutin::GlWindow,
+    pub fn update_views<C>(&mut self, f: C) 
+        where C: Fn( &glutin::GlWindow,
                     &mut handle::RenderTargetView<D::Resources, ColorFormat>,
                     &mut handle::DepthStencilView<D::Resources, DepthFormat> ) -> ()
     {
