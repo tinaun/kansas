@@ -203,6 +203,20 @@ macro_rules! int_impls {
 
 int_impls!(u8, u16, u32, u64, usize);
 
+impl CanvasColor for [u8; 4] {
+    fn as_rgb(&self) -> Rgb {
+        (self[0], self[1], self[2]).as_rgb()
+    }
+
+    fn alpha(&self) -> f32 {
+        self[3] as f32 / 256.0
+    }
+
+    fn into_gpu(self, _: Option<Rgb>) -> [u8; 4] {
+        self
+    }
+}
+
 impl CanvasColor for u32 {
     fn as_rgb(&self) -> Rgb {
         let color: [u8; 4] = unsafe {

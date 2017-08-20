@@ -106,7 +106,7 @@ impl Canvas {
                         Resized(width, height) => {
                             self.ctx.window.update_views(gfx_window_glutin::update_views);
                             //println!("resized: ({}, {})", width, height);
-                            self.ctx.window.resize(width, height);
+                            self.ctx.resize(width, height);
 
                             if let Some(cb) = self.listeners.resize.as_mut() {
                                 cb(&mut self.ctx, (width, height));
@@ -124,6 +124,7 @@ impl Canvas {
                         },
                         MouseWheel { device_id: _, delta, phase: _ } => {
                             if let Some(cb) = self.listeners.mouse_scroll.as_mut() {
+                                println!("delta: {:?}", delta);
                                 if let glutin::MouseScrollDelta::LineDelta(_, y) = delta {
                                     cb(&mut self.ctx, events::ScrollEvent::new(y));
                                 }

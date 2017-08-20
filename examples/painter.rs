@@ -57,7 +57,7 @@ fn main() {
     let c = state.clone();
     ctx.on::< events::MouseMove>(Box::new(move |ctx, e| {
         if c.borrow().0 {
-            ctx.fill_rect(e.0 as u32 - 5, e.1 as u32 - 5, 10, 10);
+            ctx.fill_rect((e.0 as u32).saturating_sub(5), (e.1 as u32).saturating_sub(5), 10, 10);
         }
     }));
 
@@ -88,6 +88,7 @@ fn main() {
     }));
 
     ctx.fill_color(state.borrow().1[0]);
+    //ctx.fill_color([0u8, 0xFF, 0x00, 0x80]);
     ctx.pause();
 
 }

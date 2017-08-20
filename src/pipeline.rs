@@ -202,7 +202,7 @@ impl<D: gfx::Device> Window<D> {
         self.encoder.update_texture::<
             <ColorFormat as Formatted>::Surface,
             ColorFormat
-        >(&self._texture, None, bounds, data).expect("painting error")
+        >(&self._texture, None, bounds, data).expect("painting error");
     }
 
     pub fn update_views<F>(&mut self, f: F) 
