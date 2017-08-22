@@ -5,21 +5,38 @@
 use std::mem;
 use std::ops::Add;
 
+// color pallete inspired by http://alumni.media.mit.edu/~wad/color/palette.html
+/// <span style="border: 1px solid black; padding: 0 7px; background: #000000;">&nbsp;</span>
 pub const BLACK: Rgb = Rgb(0.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: #FFFFFF;">&nbsp;</span>
 pub const WHITE: Rgb = Rgb(1.0, 1.0, 1.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(87, 87, 87);">&nbsp;</span>
 pub const DARK_GREY: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(160, 160, 160);">&nbsp;</span>
 pub const LIGHT_GREY: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(205, 55, 55);">&nbsp;</span>
 pub const RED: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(255, 205, 243);">&nbsp;</span>
 pub const PINK: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(129, 38, 192);">&nbsp;</span>
 pub const PURPLE: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(42, 75, 215);">&nbsp;</span>
 pub const BLUE: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(157, 175, 255);">&nbsp;</span>
 pub const LIGHT_BLUE: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(41, 208, 208);">&nbsp;</span>
 pub const CYAN: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(29, 105, 20);">&nbsp;</span>
 pub const GREEN: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(129, 197, 122);">&nbsp;</span>
 pub const LIGHT_GREEN: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(255, 238, 51);">&nbsp;</span>
 pub const YELLOW: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(255, 146, 51);">&nbsp;</span>
 pub const ORANGE: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(129, 74, 25);">&nbsp;</span>
 pub const BROWN: Rgb = Rgb(1.0, 0.0, 0.0);
+/// <span style="border: 1px solid black; padding: 0 7px; background: rgb(233, 222, 187);">&nbsp;</span>
 pub const LIGHT_BROWN: Rgb = Rgb(1.0, 0.0, 0.0);
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]

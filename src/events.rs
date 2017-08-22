@@ -1,7 +1,7 @@
 //! event listeners
 use glutin;
 
-pub use glutin::{ElementState, MouseButton, KeyboardInput};
+pub use glutin::{ElementState, MouseButton, KeyboardInput, VirtualKeyCode};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum EventType {

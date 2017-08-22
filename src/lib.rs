@@ -25,6 +25,9 @@ pub mod color;
 pub mod events;
 mod pipeline;
 
+pub use context::Context;
+
+
 use std::thread;
 use std::sync::mpsc;
 use std::ops::{Deref, DerefMut};
@@ -80,6 +83,11 @@ impl Canvas {
 
     pub fn off<E: events::Listener>(&mut self) {
         self.listeners.remove(E::event_id());
+    }
+
+    /// get a mutable reference to the canvas's context
+    pub fn context_mut(&mut self) -> &mut context::Context {
+        &mut self.ctx
     }
 
     /// hold execution until user hits `Esc`
