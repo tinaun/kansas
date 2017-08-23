@@ -1,9 +1,10 @@
 use gfx::traits::{Factory, FactoryExt};
 use gfx::format::{self, Formatted};
-use gfx::{self, handle, texture, Device};
+use gfx::{self, handle, texture, state, Device};
 use gfx_window_glutin as gfx_glutin;
 use glutin::{self, GlContext};
 
+use color::CanvasColor;
 
 // backend stuff
 
@@ -41,13 +42,13 @@ fn create_texture<F, R>(factory: &mut F, width: u32, height: u32) -> TexWithView
     for i in 0..height {
         for j in 0..width {
             //let k = ((i + j) % 256) as u8;
-            //data.extend(&[0xFF, 0, 0, 0xFF]);
+            data.extend(&[0, 0, 0, 0]);
 
-            if (i + j) % 2 == 0 {
-                data.extend(&[0x00, 0x00, 0x00, 0xFF]);
-            } else {
-                data.extend(&[0xFF, 0xFF, 0xFF, 0xFF]);
-            }
+            // if (i + j) % 2 == 0 {
+            //     data.extend(&[0x00, 0x00, 0x00, 0xFF]);
+            // } else {
+            //     data.extend(&[0xFF, 0xFF, 0xFF, 0xFF]);
+            // }
         }
     }
 
@@ -62,7 +63,7 @@ fn create_texture<F, R>(factory: &mut F, width: u32, height: u32) -> TexWithView
         kind,
         levels: 1 as texture::Level,
         format: surface,
-        bind: gfx::SHADER_RESOURCE | gfx::RENDER_TARGET,
+        bind: gfx::SHADER_RESOURCE | gfx::RENDER_TARGET | gfx::TRANSFER_SRC,
         usage: gfx::memory::Usage::Dynamic,
     };
     let raw = factory.create_texture_raw(desc, Some(channel), Some(&[&data]))
@@ -89,7 +90,11 @@ gfx_defines! {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         view: gfx::Global<[f32; 2]> = "i_View",
         canvas: gfx::TextureSampler<[f32; 4]> = "t_Canvas",
-        out: gfx::RenderTarget<ColorFormat> = "Target0",
+        out: gfx::BlendTarget<ColorFormat> = ("Target0", state::MASK_ALL, state::Blend::new(
+            state::Equation::Add, 
+            state::Factor::ZeroPlus(state::BlendValue::SourceAlpha),
+            state::Factor::OneMinus(state::BlendValue::SourceAlpha)
+        )),
         depth: gfx::DepthTarget<DepthFormat> = Default::default(),
     }
 }
@@ -166,7 +171,7 @@ pub fn init(width: u32, height: u32, ev_loop: &glutin::EventsLoop)
 
 impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
     pub fn draw(&mut self) {
-        self.encoder.clear(&self.data.out, [0.0, 0.0, 0.0, 1.0]);
+        self.encoder.clear(&self.data.out, [1.0, 1.0, 1.0, 1.0]);
         self.encoder.draw(&self.slice, &self.pipeline, &self.data);
 
         self.encoder.flush(&mut self.device);
@@ -193,7 +198,9 @@ impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
         //println!("{:?}", self.data.view);
     }
 
-    pub fn update_canvas(&mut self, x: u32, y: u32, width: u32, height: u32, data: &[[u8; 4]]) {
+    pub fn update_canvas(&mut self, x: u32, y: u32, width: u32, height: u32, data: Vec<[u8; 4]>) {
+        use gfx::memory::Typed;
+
         let bounds = texture::NewImageInfo {
             xoffset: x as u16,
             yoffset: y as u16,
@@ -205,10 +212,56 @@ impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
             mipmap: 0,
         };
 
+        let len = (self.backing.width * self.backing.height) as usize;
+        let tex_src = self.factory.create_buffer::<[u8; 4]>(
+                                        len, 
+                                        gfx::buffer::Role::Vertex,
+                                        gfx::memory::Usage::Download,
+                                        gfx::TRANSFER_DST 
+                                    ).unwrap();
+
+        let format = format::Format(format::SurfaceType::R8_G8_B8_A8, format::ChannelType::Uint);
+        let copy_bounds = texture::RawImageInfo {
+            xoffset: 0,
+            yoffset: 0,
+            zoffset: 0,
+            width: self.backing.width as u16,
+            height: self.backing.height as u16,
+            depth: 0,
+            format,
+            mipmap: 0,
+        };
+
+        self.encoder.copy_texture_to_buffer_raw(
+            &self._texture.raw(),
+            None,
+            copy_bounds,
+            &tex_src.raw(),
+            0
+        ).unwrap();
+        self.encoder.flush(&mut self.device);
+        
+        let mut new_data = data;
+        {
+            let tex_read = self.factory.read_mapping(&tex_src).unwrap();
+            for (i, f) in tex_read.iter()
+                                  .skip((y * self.backing.width + x) as usize)
+                                  .take((width * height) as usize).enumerate() 
+            {
+                if i == 0 {
+                    print!("{:?} {:?}", f, new_data[i]);
+                }
+                new_data[i] = new_data[i].into_gpu(Some(*f));
+                if i == 0 {
+                    println!(" {:?}", new_data[i]);
+                }
+            }
+        }
+
         self.encoder.update_texture::<
             <ColorFormat as Formatted>::Surface,
             ColorFormat
-        >(&self._texture, None, bounds, data).expect("painting error");
+        >(&self._texture, None, bounds, &new_data).expect("painting error");
     }
 
     pub fn update_views<C>(&mut self, f: C) 

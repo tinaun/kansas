@@ -58,11 +58,10 @@ impl Rgb {
     ///
     /// this is a linear mix. `0xFF0000` mixed with `0x00FF00` at a weight of
     /// `0.5` is `0x808000`.
-    pub fn mix(self, other: Self, weight: f32) -> Self {
-        let a = self.blend_alpha(weight);
+    pub fn mix(self, other: Self, weight: f32) -> Rgb {
         let b = other.blend_alpha(1.0 - weight);
 
-        a + b
+        self + b
     }
 
     fn clamp(self) -> Self {
@@ -111,14 +110,22 @@ impl From<(Rgb, f32)> for Rgba {
 pub trait CanvasColor: Sized {
     fn as_rgb(&self) -> Rgb;
     fn alpha(&self) -> f32;
-    fn into_gpu(self, prev: Option<Rgb>) -> [u8; 4] {
+    fn into_gpu<C: CanvasColor>(self, prev: Option<C>) -> [u8; 4] {
         let rgb = self.as_rgb();
-        let alpha = self.alpha();
+        let mut alpha = self.alpha();
         
         let color = if let Some(color) = prev {
-            rgb.mix(color, alpha)
+            let dest_rgb = color.as_rgb();
+            let dest_alpha = color.alpha();
+
+            let dest_rgb = dest_rgb.blend_alpha(dest_alpha);
+            let rgb = rgb.blend_alpha(alpha);
+            let rgb = rgb.mix(dest_rgb, alpha);
+
+            alpha += dest_alpha * (1.0 - alpha);
+            rgb
         } else {
-            rgb.blend_alpha(alpha)
+            rgb
         };
 
         let (r, g, b) = (
@@ -127,7 +134,9 @@ pub trait CanvasColor: Sized {
             (color.2 * 255.0).round() as u8
         );
 
-        [r, g, b, 0xFF]
+        let alpha = (alpha * 255.0).round() as u8;
+
+        [r, g, b, alpha]
     }
 }
 
@@ -229,9 +238,6 @@ impl CanvasColor for [u8; 4] {
         self[3] as f32 / 256.0
     }
 
-    fn into_gpu(self, _: Option<Rgb>) -> [u8; 4] {
-        self
-    }
 }
 
 impl CanvasColor for u32 {

@@ -55,10 +55,10 @@ impl Context {
         let height = height - y_extra;
 
         let data: Vec<_> = (0..width*height).map(|_| {
-            self.fill_color.into_gpu(None)
+            self.fill_color.into_gpu::<color::Rgb>(None)
         }).collect();
 
-        self.window.update_canvas(x, y, width, height, &data);
+        self.window.update_canvas(x, y, width, height, data);
     }
 
     /// fill rectangle using a fill function 
@@ -85,12 +85,12 @@ impl Context {
 
         for j in y .. y + height {
             for i in x .. x + width {
-                let color = f(i, j).into_gpu(None);
+                let color = f(i, j).into_gpu::<color::Rgb>(None);
                 data.push(color);
             }
         }
 
-        self.window.update_canvas(x, y, width, height, &data);
+        self.window.update_canvas(x, y, width, height, data);
     }
 
     /// set a pixel to a specific color
@@ -102,8 +102,8 @@ impl Context {
             return;
         }
         
-        let data = [c.into_gpu(None)];
+        let data = vec![c.into_gpu::<color::Rgb>(None)];
 
-        self.window.update_canvas(x, y, 1, 1, &data);
+        self.window.update_canvas(x, y, 1, 1, data);
     }
 }

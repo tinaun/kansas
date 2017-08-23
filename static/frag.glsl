@@ -6,8 +6,8 @@ in vec2 v_UV;
 out vec4 Target0;
 
 void main() {
-    vec3 canvas = texture(t_Canvas, v_UV).rgb;
+    vec4 canvas = texture(t_Canvas, v_UV).rgba;
 
-    Target0 = vec4(canvas, 1.0);
+    Target0 = canvas;
 }
 

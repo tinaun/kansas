@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows" )]
+//#![cfg_attr(not(debug_assertions), windows_subsystem = "windows" )]
 
 extern crate wcanvas;
 
@@ -49,8 +49,12 @@ fn main() {
     let mut ctx = wcanvas::Canvas::new();
     let state = Rc::new(RefCell::new((
         false,
-        [0xFF0000, 0xFFFF00, 0x00FF00, 
-         0x00FFFF, 0x0000FF, 0xFF00FF],
+        [(0xFF, 0x00, 0x00, 0xFF), 
+         (0xFF, 0xFF, 0x00, 0x90), 
+         (0x00, 0xFF, 0x00, 0xFF), 
+         (0x00, 0xFF, 0xFF, 0x90), 
+         (0x00, 0x00, 0xFF, 0xFF), 
+         (0xFF, 0x00, 0xFF, 0x90)] as [(u32, u32, u32, u32); 6],
         0,
     )));
     
