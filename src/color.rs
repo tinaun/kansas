@@ -59,9 +59,10 @@ impl Rgb {
     /// this is a linear mix. `0xFF0000` mixed with `0x00FF00` at a weight of
     /// `0.5` is `0x808000`.
     pub fn mix(self, other: Self, weight: f32) -> Rgb {
+        let a = self.blend_alpha(weight);
         let b = other.blend_alpha(1.0 - weight);
 
-        self + b
+        a + b
     }
 
     fn clamp(self) -> Self {
@@ -117,13 +118,12 @@ pub trait CanvasColor: Sized {
         let color = if let Some(color) = prev {
             let dest_rgb = color.as_rgb();
             let dest_alpha = color.alpha();
-
             let dest_rgb = dest_rgb.blend_alpha(dest_alpha);
-            let rgb = rgb.blend_alpha(alpha);
+
             let rgb = rgb.mix(dest_rgb, alpha);
 
             alpha += dest_alpha * (1.0 - alpha);
-            rgb
+            rgb.blend_alpha(1.0 / alpha)
         } else {
             rgb
         };

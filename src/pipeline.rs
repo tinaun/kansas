@@ -123,7 +123,7 @@ pub fn init(width: u32, height: u32, ev_loop: &glutin::EventsLoop)
     let (window, device, mut factory, color, depth) = gfx_glutin::init::<ColorFormat, DepthFormat>(builder, ctx, ev_loop);
     
     // lets see what we've got
-    //println!("{:?}", device.get_info());
+    println!("{:?}", device.get_info());
 
     //create data on the gpu
     let (tex_backing, tex_handle, tex_view) = create_texture(&mut factory, width, height);
@@ -215,12 +215,12 @@ impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
         let len = (self.backing.width * self.backing.height) as usize;
         let tex_src = self.factory.create_buffer::<[u8; 4]>(
                                         len, 
-                                        gfx::buffer::Role::Vertex,
+                                        gfx::buffer::Role::Staging,
                                         gfx::memory::Usage::Download,
-                                        gfx::TRANSFER_DST 
+                                        gfx::TRANSFER_DST | gfx::TRANSFER_SRC
                                     ).unwrap();
 
-        let format = format::Format(format::SurfaceType::R8_G8_B8_A8, format::ChannelType::Uint);
+        let format = <ColorFormat as Formatted>::get_format();
         let copy_bounds = texture::RawImageInfo {
             xoffset: 0,
             yoffset: 0,
@@ -243,10 +243,13 @@ impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
         
         let mut new_data = data;
         {
+            let start = x as usize;
+            let end = (x + width) as usize;
             let tex_read = self.factory.read_mapping(&tex_src).unwrap();
-            for (i, f) in tex_read.iter()
-                                  .skip((y * self.backing.width + x) as usize)
-                                  .take((width * height) as usize).enumerate() 
+            for (i, f) in tex_read.chunks(self.backing.width as usize)
+                                  .skip(y as usize)
+                                  .take(height as usize)
+                                  .flat_map(|s| &s[start..end]).enumerate() 
             {
                 if i == 0 {
                     print!("{:?} {:?}", f, new_data[i]);
