@@ -34,6 +34,7 @@ impl ActiveListeners {
         }
     }
     pub fn add<E: Listener>(&mut self, f: Callback<E>) {
+        #[allow(unreachable_patterns)]
         match E::event_id() {
             EventType::MouseMove => {
                 let f = unsafe { // evil unsafe downcasts evil

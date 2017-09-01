@@ -45,8 +45,8 @@ fn create_texture<F, R>(factory: &mut F, width: u32, height: u32) -> TexWithView
     let (width, height) = (width.next_power_of_two(), height.next_power_of_two());
     let mut data: Vec<u8> = vec![];
 
-    for i in 0..height {
-        for j in 0..width {
+    for _i in 0..height {
+        for _j in 0..width {
             //let k = ((i + j) % 256) as u8;
             data.extend(&[0, 0, 0, 0]);
 
@@ -130,7 +130,7 @@ pub fn init(width: u32, height: u32, ev_loop: &glutin::EventsLoop)
     
     // lets see what we've got
     if device.get_info().extensions.contains("GL_ARB_get_texture_sub_image") {
-        GL_TEX_SUB_IMAGE.store(true, Ordering::Relaxed);
+        //GL_TEX_SUB_IMAGE.store(true, Ordering::Relaxed);
         println!("{}", "yay!");
     } else {
         println!("{}", "boo");
@@ -322,8 +322,14 @@ fn sub_image_blend(ctx: &mut GlWindow, bounds: texture::NewImageInfo, data: Vec<
         
 
     unsafe {
+        use std::ffi::CStr;
+        use std::os::raw::c_char;
+
         ctx.device.with_gl(|gl| {
             gl.BindBuffer( gl::PIXEL_PACK_BUFFER, buf_id);
+
+            let cstr = CStr::from_ptr(gl.GetString(gl::RENDERER) as *const c_char);
+            println!("{}", cstr.to_string_lossy());
 
             gl.GetTextureSubImage(
                 tex_id,
