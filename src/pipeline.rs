@@ -1,12 +1,18 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use gfx::traits::{Factory, FactoryExt};
 use gfx::format::{self, Formatted};
 use gfx::{self, handle, texture, state, Device};
 use gfx_window_glutin as gfx_glutin;
+use gfx_gl as gl;
 use glutin::{self, GlContext};
 
 use color::CanvasColor;
 
 // backend stuff
+lazy_static! {
+    static ref GL_TEX_SUB_IMAGE: AtomicBool = AtomicBool::new(false);
+}
 
 const CANVAS: [Vertex; 4] =  [
     Vertex { pos: [1.0, -1.0], uv: [1.0, 1.0] },
@@ -123,7 +129,13 @@ pub fn init(width: u32, height: u32, ev_loop: &glutin::EventsLoop)
     let (window, device, mut factory, color, depth) = gfx_glutin::init::<ColorFormat, DepthFormat>(builder, ctx, ev_loop);
     
     // lets see what we've got
-    println!("{:?}", device.get_info());
+    if device.get_info().extensions.contains("GL_ARB_get_texture_sub_image") {
+        GL_TEX_SUB_IMAGE.store(true, Ordering::Relaxed);
+        println!("{}", "yay!");
+    } else {
+        println!("{}", "boo");
+    }
+    
 
     //create data on the gpu
     let (tex_backing, tex_handle, tex_view) = create_texture(&mut factory, width, height);
@@ -169,7 +181,7 @@ pub fn init(width: u32, height: u32, ev_loop: &glutin::EventsLoop)
     }
 }
 
-impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
+impl<D: gfx::Device + 'static, F: Factory<D::Resources> + 'static> Window<D, F> {
     pub fn draw(&mut self) {
         self.encoder.clear(&self.data.out, [1.0, 1.0, 1.0, 1.0]);
         self.encoder.draw(&self.slice, &self.pipeline, &self.data);
@@ -212,6 +224,16 @@ impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
             mipmap: 0,
         };
 
+        if GL_TEX_SUB_IMAGE.load(Ordering::Relaxed) {
+            use std::any::Any;
+
+            if let Some(ctx) = (self as &mut Any).downcast_mut::<GlWindow>() {
+                sub_image_blend(ctx, bounds, data);
+                return;
+            }
+            unreachable!();
+        }
+        
         let len = (self.backing.width * self.backing.height) as usize;
         let tex_src = self.factory.create_buffer::<[u8; 4]>(
                                         len, 
@@ -274,4 +296,69 @@ impl<D: gfx::Device, F: Factory<D::Resources>> Window<D, F> {
     {
         f(&self.window, &mut self.data.out, &mut self.data.depth);
     }
+}
+
+// if glGetTextureSubImage is avaliable, use that
+fn sub_image_blend(ctx: &mut GlWindow, bounds: texture::NewImageInfo, data: Vec<[u8;4]>) {
+    use gfx::memory::Typed;
+    use gfx_device_gl::{Texture, Buffer, NewTexture};
+
+    let len = (bounds.width * bounds.height) as usize;
+    let tex_src = ctx.factory.create_buffer::<[u8; 4]>(
+                                    len, 
+                                    gfx::buffer::Role::Staging,
+                                    gfx::memory::Usage::Download,
+                                    gfx::TRANSFER_DST | gfx::TRANSFER_SRC
+                                ).unwrap();
+
+    //let format = <ColorFormat as Formatted>::get_format();
+
+    let buf_id = *tex_src.raw().resource() as Buffer;
+
+    let tex_id = match *ctx._texture.raw().resource() {
+        NewTexture::Texture(t) => t,
+        _ => panic!("unsupported texture format"),
+    } as Texture;
+        
+
+    unsafe {
+        ctx.device.with_gl(|gl| {
+            gl.BindBuffer( gl::PIXEL_PACK_BUFFER, buf_id);
+
+            gl.GetTextureSubImage(
+                tex_id,
+                bounds.mipmap as gl::types::GLint,
+                bounds.xoffset as gl::types::GLint,
+                bounds.yoffset as gl::types::GLint,
+                bounds.zoffset as gl::types::GLint,
+                bounds.width as gl::types::GLint,
+                bounds.height as gl::types::GLint,
+                bounds.depth as gl::types::GLint,
+                gl::RGBA,
+                gl::UNSIGNED_BYTE,
+                len as gl::types::GLsizei,
+                0 as *mut gl::types::GLvoid,
+            );
+        });
+    }
+        
+    let mut new_data = data;
+    {
+        let tex_read = ctx.factory.read_mapping(&tex_src).unwrap();
+        for (i, f) in tex_read.iter().enumerate() 
+        {
+            if i == 0 {
+                print!("{:?} {:?}", f, new_data[i]);
+            }
+            new_data[i] = new_data[i].into_gpu(Some(*f));
+            if i == 0 {
+                println!(" {:?}", new_data[i]);
+            }
+        }
+    }
+
+    ctx.encoder.update_texture::<
+        <ColorFormat as Formatted>::Surface,
+        ColorFormat
+    >(&ctx._texture, None, bounds, &new_data).expect("painting error");    
 }

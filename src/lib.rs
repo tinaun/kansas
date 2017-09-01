@@ -20,6 +20,10 @@ extern crate gfx_device_gl;
 
 extern crate glutin;
 
+#[macro_use]
+extern crate lazy_static;
+extern crate gfx_gl;
+
 pub mod context;
 pub mod color;
 pub mod events;
