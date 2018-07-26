@@ -1,13 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows" )]
 
-extern crate wcanvas;
+extern crate kansas;
 
-use wcanvas::events;
+use kansas::events;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 
-fn render_mandelbrot(ctx: &mut wcanvas::Context, scale: f64, center: [f64; 2], limit: u32) {
+fn render_mandelbrot(ctx: &mut kansas::Context, scale: f64, center: [f64; 2], limit: u32) {
     let (w, h) = ctx.dimensions();
     ctx.fill_by(0, 0, w, h, |x, y| {
         let x = (x as f64 - w as f64 / 2.0 ) / scale + center[0];
@@ -43,7 +43,7 @@ fn render_mandelbrot(ctx: &mut wcanvas::Context, scale: f64, center: [f64; 2], l
 
 fn main() {
 
-    let mut ctx = wcanvas::Canvas::new();
+    let mut ctx = kansas::Canvas::new();
     let state = Rc::new(RefCell::new((
         200.0, // scale
         [0.0, 0.0], // offset

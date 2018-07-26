@@ -1,9 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows" )]
 
-extern crate wcanvas;
+extern crate kansas;
 
 fn main() {
-    let mut ctx = wcanvas::Canvas::new();
+    let mut ctx = kansas::Canvas::new();
     let wheel: [u32; 6] = [0xFF0000, 0xFFFF00, 0x00FF00, 
                            0x00FFFF, 0x0000FF, 0xFF00FF];
 

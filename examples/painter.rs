@@ -1,8 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows" )]
 
-extern crate wcanvas;
+extern crate kansas;
 
-use wcanvas::events;
+use kansas::events;
 use std::cell::RefCell;
 use std::rc::Rc;
 

@@ -1,7 +1,13 @@
 [package]
-name = "wcanvas"
+name = "kansas"
 version = "0.1.0"
+license = "Apache-2.0"
+readme = "README.md"
+description = "A 2d drawing + event handling api."
+documentation = "https://docs.rs/kansas"
+repository = "https://github.com/tinaun/kansas"
 authors = ["tinaun <tinagma@gmail.com>"]
+categories = ["canvas", "graphics"]
 
 [dependencies]
 gfx = "0.16"
