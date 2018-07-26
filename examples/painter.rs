@@ -66,7 +66,7 @@ fn main() {
     }));
 
     let d = state.clone();
-    ctx.on::< events::MouseClick>(Box::new(move |_, (state, button)| {
+    ctx.on::< events::MouseClick>(Box::new(move |_, (state, _button)| {
         if state == events::ElementState::Pressed {
             d.borrow_mut().0 = true;
         } else {
