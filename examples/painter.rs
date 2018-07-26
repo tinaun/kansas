@@ -46,7 +46,7 @@ fn main() {
         };
    } */
 
-    let mut ctx = wcanvas::Canvas::new();
+    let mut ctx = wcanvas::Canvas::new(800, 600);
     let state = Rc::new(RefCell::new((
         false,
         [(0xFF, 0x00, 0x00, 0xFF), 

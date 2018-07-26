@@ -3,7 +3,7 @@
 extern crate wcanvas;
 
 fn main() {
-    let mut ctx = wcanvas::Canvas::new();
+    let mut ctx = wcanvas::Canvas::new(640, 480);
     let wheel: [u32; 6] = [0xFF0000, 0xFFFF00, 0x00FF00, 
                            0x00FFFF, 0x0000FF, 0xFF00FF];
 

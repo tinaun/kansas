@@ -274,11 +274,11 @@ impl<D: gfx::Device + 'static, F: Factory<D::Resources> + 'static> Window<D, F> 
                                   .flat_map(|s| &s[start..end]).enumerate() 
             {
                 if i == 0 {
-                    print!("{:?} {:?}", f, new_data[i]);
+                    //print!("{:?} {:?}", f, new_data[i]);
                 }
                 new_data[i] = new_data[i].into_gpu(Some(*f));
                 if i == 0 {
-                    println!(" {:?}", new_data[i]);
+                    //println!(" {:?}", new_data[i]);
                 }
             }
         }

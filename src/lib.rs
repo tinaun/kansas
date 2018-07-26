@@ -45,9 +45,9 @@ pub struct Canvas {
 impl Canvas {
 
     /// create a new Canvas
-    pub fn new() -> Self {
+    pub fn new(x: u32, y: u32) -> Self {
         let ev_loop = glutin::EventsLoop::new();
-        let ctx = context::Context::new(800, 600, &ev_loop);
+        let ctx = context::Context::new(x, y, &ev_loop);
 
         let (tx, ev_loop_handle) = mpsc::channel();
 

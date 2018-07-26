@@ -43,7 +43,7 @@ fn render_mandelbrot(ctx: &mut wcanvas::Context, scale: f64, center: [f64; 2], l
 
 fn main() {
 
-    let mut ctx = wcanvas::Canvas::new();
+    let mut ctx = wcanvas::Canvas::new(600, 600);
     let state = Rc::new(RefCell::new((
         200.0, // scale
         [0.0, 0.0], // offset
